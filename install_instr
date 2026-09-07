@@ -1,0 +1,39 @@
+VGATE9 does not talk to a remote hypervisor. It must run on the Proxmox host itself, as root, and it calls that host’s local VM CLI (/usr/sbin/qm by default). There is no API URL or node name in .env to point at another box.
+
+.env only changes local knobs: bind, port, PAM service, mock, read-only, CLI path, session length.
+
+Move it to another host
+
+1. Copy the project (or git clone) onto the other Proxmox node.
+2. On that node:
+
+cd /path/to/mithubvirt
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -e .
+cp .env.example .env   # optional
+python -m mithubvirt
+
+3. Sign in with a local PAM user on that host (that machine’s root / gs / etc.), not the account from this box.
+4. Open http://<new-host-ip>:8787.
+
+If you use systemd
+
+systemd/vgate9.service currently hardcodes this machine:
+
+• WorkingDirectory=/home/gs/Projects/mithubvirt
+• ExecStart=/home/gs/Projects/mithubvirt/.venv/bin/python -m mithubvirt
+
+On the new host, change those two paths (and EnvironmentFile if you use .env), then:
+
+cp systemd/vgate9.service /etc/systemd/system/vgate9.service
+systemctl daemon-reload
+systemctl enable --now vgate9
+
+What you do not put in .env
+
+• Other node IP / hostname
+• Proxmox API token
+• Cluster name
+
+Those are unused. Each install only manages VMs on the host where the process is running.
